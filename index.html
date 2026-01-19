@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语听写练习 (分天版)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        /* Day Selection Styles */
+        .day-selector {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        select {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            color: #2d3748;
+            outline: none;
+            cursor: pointer;
+            background: white;
+        }
+
+        .status {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .label {
+            color: #718096;
+            font-weight: 600;
+        }
+
+        .value {
+            color: #2d3748;
+            font-weight: bold;
+        }
+
+        .progress {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 30px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .current-word {
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 40px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .starting {
+            text-align: center;
+            font-size: 1.5em;
+            color: #667eea;
+            margin: 40px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .answers {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .answers h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .answer-list {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .answer-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .answer-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .answer-number {
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 15px;
+            min-width: 30px;
+        }
+
+        .answer-text {
+            color: #2d3748;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .answer-meaning {
+            color: #718096;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎧 英语听写练习</h1>
+
+        <div class="day-selector">
+            <select id="daySelect" onchange="loadDay()">
+                <option value="Day 1">Day 1 (20 words)</option>
+                <option value="Day 2">Day 2 (20 words)</option>
+                <option value="Day 3">Day 3 (3 words)</option>
+            </select>
+        </div>
+
+        <div class="status">
+            <div class="status-item">
+                <span class="label">本组词数：</span>
+                <span class="value" id="totalCount">20</span>
+            </div>
+            <div class="status-item">
+                <span class="label">当前进度：</span>
+                <span class="value" id="currentProgress">0 / 20</span>
+            </div>
+            <div class="status-item">
+                <span class="label">每词重复：</span>
+                <span class="value">3 次</span>
+            </div>
+            <div class="status-item">
+                <span class="label">间隔时间：</span>
+                <span class="value">10 秒</span>
+            </div>
+        </div>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+
+        <div class="current-word" id="currentWord" style="display: none;"></div>
+        <div class="starting" id="starting">准备开始...</div>
+
+        <div class="controls">
+            <button id="startBtn" onclick="startDictation()">开始听写</button>
+            <button id="pauseBtn" onclick="pauseDictation()" style="display: none;" disabled>暂停</button>
+            <button id="resumeBtn" onclick="resumeDictation()" style="display: none;">继续</button>
+            <button id="restartBtn" onclick="resetDictation()" style="display: none; background: #e53e3e;">重置</button>
+        </div>
+
+        <div class="answers" id="answers">
+            <h2>📝 听写答案</h2>
+            <div class="answer-list" id="answerList"></div>
+        </div>
+    </div>
+
+    <script>
+        // 单词数据源
+        const wordData = {
+            "Day 1": [
+                { "text": "country", "meaning": "国家" },
+                { "text": "animal", "meaning": "动物" },
+                { "text": "every", "meaning": "每" },
+                { "text": "during", "meaning": "在...期间" },
+                { "text": "coloured", "meaning": "彩色的" },
+                { "text": "ability", "meaning": "能力" },
+                { "text": "together", "meaning": "一起" },
+                { "text": "ice cream", "meaning": "冰淇淋" },
+                { "text": "busy", "meaning": "忙的" },
+                { "text": "wake up", "meaning": "醒来" },
+                { "text": "early", "meaning": "早地; 早的" },
+                { "text": "palace", "meaning": "宫殿" },
+                { "text": "Children's Palace", "meaning": "少年宫" },
+                { "text": "cinema", "meaning": "电影院" },
+                { "text": "seldom", "meaning": "极少地" },
+                { "text": "stay", "meaning": "停留; 待在..." },
+                { "text": "sure", "meaning": "确信; 肯定的" },
+                { "text": "a bottle of", "meaning": "一瓶..." },
+                { "text": "juice", "meaning": "果汁" },
+                { "text": "should", "meaning": "应该" }
+            ],
+            "Day 2": [
+                { "text": "sandwich", "meaning": "三明治" },
+                { "text": "hamburger", "meaning": "汉堡包" },
+                { "text": "starter", "meaning": "第一道菜" },
+                { "text": "main course", "meaning": "主菜" },
+                { "text": "meat", "meaning": "肉" },
+                { "text": "vegetable", "meaning": "蔬菜" },
+                { "text": "potato", "meaning": "马铃薯" },
+                { "text": "dessert", "meaning": "甜品" },
+                { "text": "chocolate", "meaning": "巧克力" },
+                { "text": "start", "meaning": "开始; 出发" },
+                { "text": "again", "meaning": "再; 再一次" },
+                { "text": "England", "meaning": "英格兰; 英国" },
+                { "text": "report", "meaning": "报告" },
+                { "text": "season", "meaning": "季节" },
+                { "text": "temperature", "meaning": "温度" },
+                { "text": "degree", "meaning": "度" },
+                { "text": "quickly", "meaning": "迅速地; 飞快地" },
+                { "text": "change", "meaning": "改变" },
+                { "text": "lunchtime", "meaning": "午餐时刻" },
+                { "text": "umbrella", "meaning": "雨伞" }
+            ],
+            "Day 3": [
+                { "text": "thought", "meaning": "想 (think的过去式)" },
+                { "text": "finish", "meaning": "完成" },
+                { "text": "true", "meaning": "真实的" }
+            ]
+        };
+
+        let currentDayWords = [];
+        let currentIndex = 0;
+        let isPaused = false;
+        let isRunning = false;
+        const REPEAT_COUNT = 3; // 每个单词读3遍
+        const INTERVAL = 10000; // 间隔10秒
+
+        // 初始化加载 Day 1
+        window.onload = function() {
+            loadDay();
+        };
+
+        function loadDay() {
+            if (isRunning) {
+                alert("请先停止当前听写再切换天数！");
+                document.getElementById('daySelect').value = Object.keys(wordData).find(key => wordData[key] === currentDayWords);
+                return;
+            }
+            
+            const selectedDay = document.getElementById('daySelect').value;
+            currentDayWords = wordData[selectedDay];
+            
+            // 更新状态栏
+            document.getElementById('totalCount').textContent = currentDayWords.length;
+            document.getElementById('currentProgress').textContent = `0 / ${currentDayWords.length}`;
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressBar').textContent = '0%';
+            
+            // 重置界面
+            resetUI();
+        }
+
+        function resetUI() {
+            document.getElementById('answers').style.display = 'none';
+            document.getElementById('starting').style.display = 'flex';
+            document.getElementById('starting').textContent = '准备就绪，点击开始';
+            document.getElementById('currentWord').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('resumeBtn').style.display = 'none';
+            document.getElementById('restartBtn').style.display = 'none';
+            document.getElementById('daySelect').disabled = false;
+        }
+
+        async function startDictation() {
+            // 检查浏览器支持
+            if (!('speechSynthesis' in window)) {
+                alert("您的浏览器不支持语音朗读功能，请使用 Chrome/Edge/Safari 等现代浏览器。");
+                return;
+            }
+
+            isRunning = true;
+            currentIndex = 0;
+            document.getElementById('daySelect').disabled = true;
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('restartBtn').style.display = 'none';
+            document.getElementById('answers').style.display = 'none';
+
+            const startingEl = document.getElementById('starting');
+            startingEl.style.display = 'flex';
+            
+            // 倒计时
+            for (let i = 3; i > 0; i--) {
+                startingEl.textContent = `听写将在 ${i} 秒后开始...`;
+                await sleep(1000);
+            }
+            startingEl.style.display = 'none';
+            document.getElementById('currentWord').style.display = 'flex';
+
+            // 开始循环播放单词
+            for (let i = 0; i < currentDayWords.length; i++) {
+                currentIndex = i;
+                updateProgress();
+                await dictateItem(i);
+                
+                // 如果暂停了，等待恢复
+                while (isPaused) {
+                    await sleep(100);
+                }
+            }
+
+            finishDictation();
+        }
+
+        async function dictateItem(index) {
+            const word = currentDayWords[index];
+            const displayEl = document.getElementById('currentWord');
+            
+            displayEl.textContent = `单词 ${index + 1}`;
+            displayEl.style.color = "#2d3748";
+
+            // 读单词 (重复 REPEAT_COUNT 次)
+            for (let r = 0; r < REPEAT_COUNT; r++) {
+                if (isPaused) return; // 暂停时打断
+                
+                await speak(word.text);
+                
+                // 单词之间的短暂间隔，最后一遍读完后不等待这里，而是去等长间隔
+                if (r < REPEAT_COUNT - 1) {
+                    await sleep(1500); 
+                }
+            }
+
+            // 等待间隔时间 (倒计时显示)
+            displayEl.style.color = "#718096";
+            for (let t = INTERVAL / 1000; t > 0; t--) {
+                if (isPaused) return; // 暂停逻辑需处理
+                displayEl.textContent = `等待 ${t} 秒...`;
+                await sleep(1000);
+            }
+        }
+
+        function speak(text) {
+            return new Promise((resolve) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-GB'; // 英式发音，也可以改为 'en-US'
+                utterance.rate = 0.8; // 稍微放慢语速适合听写
+                
+                utterance.onend = () => {
+                    resolve();
+                };
+                
+                utterance.onerror = (e) => {
+                    console.error("Speech error:", e);
+                    resolve(); // 出错也继续，避免卡死
+                };
+
+                window.speechSynthesis.speak(utterance);
+            });
+        }
+
+        function updateProgress() {
+            const total = currentDayWords.length;
+            const current = currentIndex + 1;
+            const percentage = Math.round((current / total) * 100);
+            
+            document.getElementById('currentProgress').textContent = `${current} / ${total}`;
+            const bar = document.getElementById('progressBar');
+            bar.style.width = `${percentage}%`;
+            bar.textContent = `${percentage}%`;
+        }
+
+        function pauseDictation() {
+            isPaused = true;
+            window.speechSynthesis.cancel(); // 停止当前发音
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('resumeBtn').style.display = 'inline-block';
+            document.getElementById('currentWord').textContent = "已暂停";
+        }
+
+        function resumeDictation() {
+            isPaused = false;
+            document.getElementById('resumeBtn').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'inline-block';
+            // 恢复时，逻辑会从 dictateItem 或 sleep 循环中继续
+            // 注意：简单恢复可能导致当前单词重读或跳过倒计时，简化处理即可
+        }
+
+        function resetDictation() {
+            window.speechSynthesis.cancel();
+            isRunning = false;
+            isPaused = false;
+            resetUI();
+            loadDay();
+        }
+
+        function finishDictation() {
+            isRunning = false;
+            document.getElementById('currentWord').textContent = "听写完成！";
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('restartBtn').style.display = 'inline-block';
+            document.getElementById('daySelect').disabled = false;
+            
+            showAnswers();
+        }
+
+        function showAnswers() {
+            const list = document.getElementById('answerList');
+            list.innerHTML = '';
+            
+            currentDayWords.forEach((word, index) => {
+                const item = document.createElement('div');
+                item.className = 'answer-item';
+                item.innerHTML = `
+                    <div class="answer-left">
+                        <span class="answer-number">${index + 1}.</span>
+                        <span class="answer-text">${word.text}</span>
+                    </div>
+                    <span class="answer-meaning">${word.meaning}</span>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('answers').style.display = 'block';
+            // 滚动到底部查看答案
+            document.getElementById('answers').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
